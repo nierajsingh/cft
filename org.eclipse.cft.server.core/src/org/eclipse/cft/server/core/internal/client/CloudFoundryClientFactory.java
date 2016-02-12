@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 Pivotal Software, Inc. 
+ * Copyright (c) 2012, 2016 Pivotal Software, Inc. 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ package org.eclipse.cft.server.core.internal.client;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Properties;
 
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
@@ -49,6 +50,10 @@ public class CloudFoundryClientFactory {
 
 	private static CloudFoundryClientFactory sessionFactory = null;
 
+	public static final String HTTP_CLIENT_DISABLE_CONNECTION_POOL = "cft.http.client.disable.connection.pool";
+
+	private Boolean disableConnectionPool = null;
+
 	public static CloudFoundryClientFactory getDefault() {
 		if (sessionFactory == null) {
 			sessionFactory = new CloudFoundryClientFactory();
@@ -71,8 +76,8 @@ public class CloudFoundryClientFactory {
 		// creation
 
 		HttpProxyConfiguration proxyConfiguration = getProxy(url);
-		return session != null ? new CloudFoundryClient(credentials, url, session, selfSigned)
-				: new CloudFoundryClient(credentials, url, proxyConfiguration, selfSigned);
+		return session != null ? new CloudFoundryClient(credentials, url, session, selfSigned, disableConnectionPool())
+				: new CloudFoundryClient(credentials, url, proxyConfiguration, selfSigned, disableConnectionPool());
 	}
 
 	public CloudFoundryOperations getCloudFoundryOperations(CloudCredentials credentials, URL url, String orgName,
@@ -85,7 +90,8 @@ public class CloudFoundryClientFactory {
 		// client
 		// creation
 		HttpProxyConfiguration proxyConfiguration = getProxy(url);
-		return new CloudFoundryClient(credentials, url, orgName, spaceName, proxyConfiguration, selfsigned);
+		return new CloudFoundryClient(credentials, url, orgName, spaceName, proxyConfiguration, selfsigned,
+				disableConnectionPool());
 	}
 
 	public CloudFoundryOperations getCloudFoundryOperations(String cloudControllerUrl) throws MalformedURLException {
@@ -101,7 +107,29 @@ public class CloudFoundryClientFactory {
 		// therefore it is not critical to set the proxy in the client on client
 		// creation
 		HttpProxyConfiguration proxyConfiguration = getProxy(url);
-		return new CloudFoundryClient(url, proxyConfiguration, selfSigned);
+		return new CloudFoundryClient(url, proxyConfiguration, selfSigned, disableConnectionPool());
+	}
+
+	protected boolean disableConnectionPool() {
+
+		if (disableConnectionPool == null) {
+			try {
+				Properties properties = System.getProperties();
+				// By default disable connection pool (i.e. flag is set to true)
+				// unless
+				// a property exists that sets
+				// USING connection pool to "true" (so, i.e., disable connection
+				// pool is
+				// false)
+				disableConnectionPool = properties != null
+						&& properties.containsKey(HTTP_CLIENT_DISABLE_CONNECTION_POOL)
+						&& "true".equals(properties.getProperty(HTTP_CLIENT_DISABLE_CONNECTION_POOL));
+			}
+			catch (SecurityException e) {
+				disableConnectionPool = false;
+			}
+		}
+		return disableConnectionPool;
 	}
 
 	protected static CloudCredentials getCredentials(String userName, String password) {
