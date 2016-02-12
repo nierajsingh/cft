@@ -32,6 +32,7 @@ import java.util.zip.ZipFile;
 
 import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
+import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryProjectUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.application.CloudZipApplicationArchive;
@@ -43,6 +44,7 @@ import org.eclipse.cft.server.ui.internal.CloudUiUtil;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -52,6 +54,7 @@ import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.internal.ui.jarpackagerfat.FatJarRsrcUrlBuilder;
 import org.eclipse.jdt.ui.jarpackager.IJarBuilder;
 import org.eclipse.jdt.ui.jarpackager.IJarExportRunnable;
@@ -111,6 +114,28 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 		if (archive == null) {
 
 			File packagedFile = null;
+
+			
+			String prefix = "[CHECK SPRING BOOT JAVA PROJECT ARCHIVING] - ";
+			
+			printToConsole(prefix+appModule.getDeployedApplicationName());
+			printToConsole(prefix+" Local Module ID - " +appModule.getLocalModule().getId());
+			printToConsole(prefix+" Module Type ID - "+appModule.getLocalModule().getModuleType().getId());
+			printToConsole(prefix+" IProject - "+appModule.getLocalModule().getProject());
+			IProject project = appModule.getLocalModule().getProject();
+			if (project != null) {
+				printToConsole(prefix+" IProject is accessible - "+project.isAccessible());
+
+				
+				try {
+					printToConsole(prefix+" IProject has Java Nature - "+project.hasNature(JavaCore.NATURE_ID));
+					printToConsole(prefix+" IProject has IJavaProject - "+((IJavaProject) project.getNature(JavaCore.NATURE_ID)!=null));
+				}
+				catch (CoreException e) {
+					CloudFoundryPlugin.logError("Error getting Java project for project '" + project.getName() + "'", e); //$NON-NLS-1$ //$NON-NLS-2$
+				}
+			}
+			
 
 			IJavaProject javaProject = CloudFoundryProjectUtil
 					.getJavaProject(appModule);
@@ -380,6 +405,10 @@ public class JavaCloudFoundryArchiver implements ICloudFoundryArchiver {
 		packageData.setManifestMainClass(mainType);
 		packageData.setElements(roots);
 		return packageData;
+	}
+	
+	protected void printToConsole(String message) throws CoreException{
+		cloudServer.getBehaviour().printlnToConsole(appModule, message);
 	}
 
 	protected File packageApplication(final JarPackageData packageData,

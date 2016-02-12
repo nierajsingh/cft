@@ -1653,7 +1653,7 @@ public class CloudFoundryServerBehaviour extends ServerBehaviourDelegate {
 		printToConsole(appModule, message, true, false);
 	}
 
-	protected void printlnToConsole(CloudFoundryApplicationModule appModule, String message) throws CoreException {
+	public void printlnToConsole(CloudFoundryApplicationModule appModule, String message) throws CoreException {
 		message += '\n';
 		printToConsole(appModule, message, false, false);
 	}
