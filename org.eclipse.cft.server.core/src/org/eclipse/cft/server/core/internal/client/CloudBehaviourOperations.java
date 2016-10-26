@@ -46,9 +46,11 @@ public class CloudBehaviourOperations {
 	public static String INTERNAL_ERROR_NO_WST_MODULE = "Internal Error: No WST IModule specified - Unable to deploy or start application"; //$NON-NLS-1$
 
 	private final CloudFoundryServerBehaviour behaviour;
+	private final ClientRequestFactory requestFactory;
 
-	public CloudBehaviourOperations(CloudFoundryServerBehaviour behaviour) {
+	public CloudBehaviourOperations(CloudFoundryServerBehaviour behaviour, CloudServerCFClient client) {
 		this.behaviour = behaviour;
+		this.requestFactory = client.getClientRequestFactory();
 	}
 
 	/**
@@ -58,7 +60,7 @@ public class CloudBehaviourOperations {
 	 * @throws CoreException if operation was not created
 	 */
 	public ICloudFoundryOperation createServices(final CFServiceInstance[] services) throws CoreException {
-		return new UpdateServicesOperation(behaviour.getRequestFactory().getCreateServicesRequest(services), behaviour);
+		return new UpdateServicesOperation(getRequestFactory().getCreateServicesRequest(services), behaviour);
 	}
 
 	/**
@@ -67,7 +69,7 @@ public class CloudBehaviourOperations {
 	 * @throws CoreException if operation was not created.
 	 */
 	public ICloudFoundryOperation deleteServices(final List<String> services) throws CoreException {
-		return new UpdateServicesOperation(behaviour.getRequestFactory().getDeleteServicesRequest(services), behaviour);
+		return new UpdateServicesOperation(getRequestFactory().getDeleteServicesRequest(services), behaviour);
 	}
 
 	/**
@@ -121,9 +123,8 @@ public class CloudBehaviourOperations {
 	 */
 	public ICloudFoundryOperation memoryUpdate(final CloudFoundryApplicationModule appModule, final int memory)
 			throws CoreException {
-		return new ApplicationUpdateOperation(
-				behaviour.getRequestFactory().getUpdateApplicationMemoryRequest(appModule, memory), behaviour,
-				appModule);
+		return new ApplicationUpdateOperation(getRequestFactory().getUpdateApplicationMemoryRequest(appModule, memory),
+				behaviour, appModule);
 	}
 
 	
@@ -131,7 +132,7 @@ public class CloudBehaviourOperations {
 			throws CoreException {
 		
 		return new ApplicationUpdateOperation(
-				behaviour.getRequestFactory().updateApplicationDiego(appModule, diego), behaviour,
+				requestFactory.updateApplicationDiego(appModule, diego), behaviour,
 				appModule);
 	}
 
@@ -140,7 +141,7 @@ public class CloudBehaviourOperations {
 			throws CoreException {
 		
 		return new ApplicationUpdateOperation(
-				behaviour.getRequestFactory().updateApplicationEnableSsh(appModule, enableSsh), behaviour,
+				requestFactory.updateApplicationEnableSsh(appModule, enableSsh), behaviour,
 				appModule);
 	}
 
@@ -155,8 +156,8 @@ public class CloudBehaviourOperations {
 				.getExistingCloudModule(appName);
 
 		if (appModule != null) {
-			return new ApplicationUpdateOperation(behaviour.getRequestFactory().getUpdateAppUrlsRequest(appName, urls),
-					behaviour, appModule.getLocalModule());
+			return new ApplicationUpdateOperation(getRequestFactory().getUpdateAppUrlsRequest(appName, urls), behaviour,
+					appModule.getLocalModule());
 		}
 		else {
 			throw CloudErrorUtil.toCoreException(
@@ -170,8 +171,13 @@ public class CloudBehaviourOperations {
 	 */
 	public ICloudFoundryOperation bindServices(final CloudFoundryApplicationModule appModule,
 			final List<String> services) throws CoreException {
-		return new ApplicationUpdateOperation(behaviour.getRequestFactory().getUpdateServicesRequest(
-				appModule.getDeployedApplicationName(), services), behaviour, appModule.getLocalModule());
+		return new ApplicationUpdateOperation(
+				getRequestFactory().getUpdateServicesRequest(appModule.getDeployedApplicationName(), services),
+				behaviour, appModule.getLocalModule());
+	}
+
+	private ClientRequestFactory getRequestFactory() {
+		return requestFactory;
 	}
 
 	/**
@@ -184,7 +190,7 @@ public class CloudBehaviourOperations {
 	 */
 	public ICloudFoundryOperation environmentVariablesUpdate(IModule module, String appName,
 			List<EnvironmentVariable> variables) throws CoreException {
-		BaseClientRequest<Void> request = behaviour.getRequestFactory().getUpdateEnvVarRequest(appName, variables);
+		ClientRequest<Void> request = getRequestFactory().getUpdateEnvVarRequest(appName, variables);
 		return new ApplicationUpdateOperation(request, behaviour, module);
 	}
 
@@ -292,7 +298,7 @@ public class CloudBehaviourOperations {
 
 				if (module == null) {
 					throw CloudErrorUtil.toCoreException("Internal Error: No module to update in - " + //$NON-NLS-1$
-							getBehaviour().getCloudFoundryServer().getServerId());
+					getBehaviour().getCloudFoundryServer().getServerId());
 				}
 
 				getBehaviour().updateDeployedModule(module, monitor);

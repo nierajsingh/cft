@@ -12,8 +12,10 @@
  *******************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
+import org.eclipse.cft.server.core.internal.CloudFoundryServer;
+
 abstract class FileRequest<T> extends StagingAwareRequest<T> {
-	FileRequest(String label, CloudFoundryServerBehaviour behaviour) {
-		super(label, behaviour);
+	FileRequest(CloudFoundryServer cloudServer, String label) {
+		super(cloudServer, label);
 	}
 }

@@ -43,8 +43,9 @@ import org.eclipse.cft.server.core.internal.CloudFoundryBrandingExtensionPoint.C
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudUtil;
+import org.eclipse.cft.server.core.internal.client.CFClient;
+import org.eclipse.cft.server.core.internal.client.CFClientManager;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryClientFactory;
-import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
 import org.eclipse.cft.server.core.internal.spaces.CloudOrgsAndSpaces;
 import org.eclipse.cft.server.ui.internal.wizards.HostnameValidationResult;
@@ -270,14 +271,17 @@ public class CFUiUtil {
 			final boolean displayURL, final boolean selfSigned, IRunnableContext context) throws CoreException,
 			OperationCanceledException {
 
+		String url = urlText;
+		if (displayURL) {
+			url = getUrlFromDisplayText(urlText);
+		}
+		final String actualUrl = url;
+		final CFClientManager clientManager = CloudFoundryPlugin.getClientManagerRegistry().getClientManager(actualUrl);
+	
 		try {
 			ICoreRunnable coreRunner = new ICoreRunnable() {
 				public void run(IProgressMonitor monitor) throws CoreException {
-					String url = urlText;
-					if (displayURL) {
-						url = getUrlFromDisplayText(urlText);
-					}
-					CloudFoundryServerBehaviour.validate(cfServer, url, userName, password, selfSigned, false, null, null, monitor);
+					clientManager.validate(actualUrl, userName, password, selfSigned, monitor);
 				}
 			};
 			if (context != null) {
@@ -308,7 +312,8 @@ public class CFUiUtil {
 					if (displayURL) {
 						url = getUrlFromDisplayText(urlText);
 					}
-					CloudFoundryServerBehaviour.validate(cfServer, url, null, null, selfSigned, true, passcode, tokenValue, monitor);
+					CFClientManager clientManager = CloudFoundryPlugin.getClientManagerRegistry().getClientManager(url);
+					clientManager.validateSso(url, cfServer, selfSigned, passcode, tokenValue, monitor);
 				}
 			};
 			if (context != null) {
@@ -323,7 +328,6 @@ public class CFUiUtil {
 		}
 	}
 
-	
 	/**
 	 * Runnable context can be null. If so, default Eclipse progress service
 	 * will be used as a runnable context. Display URL should be true if the
@@ -351,15 +355,22 @@ public class CFUiUtil {
 					if (displayURL) {
 						url = getUrlFromDisplayText(urlText);
 					}
+					CFClient client = null;
+					CFClientManager clientManager = CloudFoundryPlugin.getClientManagerRegistry().getClientManager(url);
 					if (sso) {
 						CloudCredentials credentials = CloudUtil.createSsoCredentials(passcode, tokenValue);
 						if (credentials == null) {
 							credentials = new CloudCredentials(passcode);
 						}
-						supportsSpaces[0] = CloudFoundryServerBehaviour.getCloudSpacesExternalClient(cfServer, credentials , url, selfSigned, sso, passcode, tokenValue, monitor);
-					} else {
-						supportsSpaces[0] = CloudFoundryServerBehaviour.getCloudSpacesExternalClient(cfServer, new CloudCredentials(userName, password), url, selfSigned, monitor);
+						client = clientManager.createClient(url, credentials, selfSigned, monitor);
 					}
+					else {
+						client = clientManager.createClient(url, new CloudCredentials(userName, password), selfSigned,
+								monitor);
+					}
+
+					supportsSpaces[0] = client.getCloudSpaces(monitor);
+
 				}
 			};
 			if (context != null) {
@@ -634,9 +645,9 @@ public class CFUiUtil {
 		String spaceName = server.getCloudFoundrySpace().getSpaceName();
 		int suffixHash;
 		if (userName != null) {
-		   suffixHash = (userName + orgName + spaceName).hashCode();
+			suffixHash = (userName + orgName + spaceName).hashCode();
 		} else {
-		   suffixHash = (orgName + spaceName).hashCode();
+			suffixHash = (orgName + spaceName).hashCode();
 		}
 		String hashString = String.valueOf(suffixHash).substring(0, 6);
 		do {
@@ -704,14 +715,14 @@ public class CFUiUtil {
 
 			}
 			else {
-				intSuffix ++;   
+				intSuffix++;
 				// The route is taken (as determined either by checking the
 				// route list, or by attempting to reserve)
 
 				isUniqueURL = false;
 				StringBuilder sb = new StringBuilder(url);
 				String subdomain = cloudUrl.getSubdomain();
-				
+
 				if (intSuffix == 0) {  // First attempt at a suggested unused name
 					sb = new StringBuilder(url);
 					subdomain = cloudUrl.getSubdomain();    // Example: MyApp1-23526.  If app is actually called MyApp1-23526, then it will be MyApp1-23526-23526
@@ -888,7 +899,7 @@ public class CFUiUtil {
 		}
 
 	}
-	
+
 	public static String getPromptText(CloudFoundryServer cfServer) {
 		String ssoUrl = "";
 		String href = null;
