@@ -46,11 +46,13 @@ public class CloudBehaviourOperations {
 	public static String INTERNAL_ERROR_NO_WST_MODULE = "Internal Error: No WST IModule specified - Unable to deploy or start application"; //$NON-NLS-1$
 
 	private final CloudFoundryServerBehaviour behaviour;
+
 	private final ClientRequestFactory requestFactory;
 
-	public CloudBehaviourOperations(CloudFoundryServerBehaviour behaviour, CloudServerCFClient client) {
+	public CloudBehaviourOperations(CloudFoundryServerBehaviour behaviour, CloudServerCFClient client,
+			ClientRequestFactory requestFactory) {
 		this.behaviour = behaviour;
-		this.requestFactory = client.getClientRequestFactory();
+		this.requestFactory = requestFactory;
 	}
 
 	/**
@@ -127,25 +129,20 @@ public class CloudBehaviourOperations {
 				behaviour, appModule);
 	}
 
-	
 	public ICloudFoundryOperation updateApplicationDiego(final CloudFoundryApplicationModule appModule, boolean diego)
 			throws CoreException {
-		
-		return new ApplicationUpdateOperation(
-				requestFactory.updateApplicationDiego(appModule, diego), behaviour,
+
+		return new ApplicationUpdateOperation(requestFactory.updateApplicationDiego(appModule, diego), behaviour,
 				appModule);
 	}
 
+	public ICloudFoundryOperation updateApplicationEnableSsh(final CloudFoundryApplicationModule appModule,
+			boolean enableSsh) throws CoreException {
 
-	public ICloudFoundryOperation updateApplicationEnableSsh(final CloudFoundryApplicationModule appModule, boolean enableSsh)
-			throws CoreException {
-		
-		return new ApplicationUpdateOperation(
-				requestFactory.updateApplicationEnableSsh(appModule, enableSsh), behaviour,
-				appModule);
+		return new ApplicationUpdateOperation(requestFactory.updateApplicationEnableSsh(appModule, enableSsh),
+				behaviour, appModule);
 	}
 
-	
 	/**
 	 * Gets an operation to update the application's URL mapping.
 	 * @throws CoreException if failed to create the operation

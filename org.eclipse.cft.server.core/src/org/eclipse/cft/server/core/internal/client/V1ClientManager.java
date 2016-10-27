@@ -199,8 +199,8 @@ public class V1ClientManager implements CFClientManager {
 		progress.beginTask(Messages.CONNECTING, IProgressMonitor.UNKNOWN);
 		try {
 
-			CloudFoundryOperations v1Client = createV1Client(toUrl(cloudServer.getUrl()), credentials, cloudFoundrySpace,
-					cloudServer.isSelfSigned());
+			CloudFoundryOperations v1Client = cloudFoundrySpace != null ? createV1Client(toUrl(cloudServer.getUrl()), credentials, cloudFoundrySpace,
+					cloudServer.isSelfSigned()) : createV1Client(toUrl(cloudServer.getUrl()), credentials, cloudServer.isSelfSigned());
 			CloudServerCFClient cloudServerCfClient = new CloudServerCFClient(v1Client, cloudServer);
 
 			CloudFoundryLoginHandler operationsHandler = new CloudFoundryLoginHandler(cloudServerCfClient, cloudServer);

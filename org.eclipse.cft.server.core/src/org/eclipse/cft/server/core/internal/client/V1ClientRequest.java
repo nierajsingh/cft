@@ -28,11 +28,8 @@ import org.eclipse.core.runtime.IProgressMonitor;
 
 abstract public class V1ClientRequest<T> extends ClientRequest<T> {
 
-	protected final CloudFoundryServerBehaviour behaviour;
-
-	public V1ClientRequest(CloudFoundryServer cloudServer, String label) {
-		super(cloudServer, label);
-		this.behaviour = cloudServer.getBehaviour();
+	public V1ClientRequest(CloudFoundryServer cloudServer, CloudServerCFClient client, String label) {
+		super(cloudServer, client, label);
 	}
 
 	protected T runRequest(CloudServerCFClient client, IProgressMonitor monitor) throws CoreException {

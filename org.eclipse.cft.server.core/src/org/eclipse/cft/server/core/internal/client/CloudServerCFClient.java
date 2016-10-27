@@ -84,7 +84,7 @@ public class CloudServerCFClient extends CFClient {
 
 	private CloudBehaviourOperations cloudBehaviourOperations;
 
-	public CloudServerCFClient(CloudFoundryOperations v1Operations, CloudFoundryServer cloudServer) {
+	public CloudServerCFClient(CloudFoundryOperations v1Operations, CloudFoundryServer cloudServer) throws CoreException {
 		super(v1Operations);
 		this.cloudServer = cloudServer;
 		this.requestFactory = new ClientRequestFactory(cloudServer, this);
@@ -93,7 +93,7 @@ public class CloudServerCFClient extends CFClient {
 		// uses the same client associated with the cloud server instance, the
 		// client owns
 		// the cloud behaviour operations.
-		this.cloudBehaviourOperations = new CloudBehaviourOperations(cloudServer.getBehaviour(), this);
+		this.cloudBehaviourOperations = new CloudBehaviourOperations(cloudServer.getBehaviour(), this, this.requestFactory);
 	}
 
 	public ClientRequestFactory getClientRequestFactory() {
@@ -244,17 +244,8 @@ public class CloudServerCFClient extends CFClient {
 		runRequest(requestFactory.deleteRoute(host, domainName), monitor);
 	}
 
-	@Override
 	public CloudOrgsAndSpaces getCloudSpaces(IProgressMonitor monitor) throws CoreException {
-		return new V1ClientRequest<CloudOrgsAndSpaces>(cloudServer, Messages.GETTING_ORGS_AND_SPACES) {
-
-			@Override
-			protected CloudOrgsAndSpaces runV1Request(CloudFoundryOperations client, IProgressMonitor monitor)
-					throws CoreException {
-				return CloudServerCFClient.super.getCloudSpaces(monitor);
-			}
-
-		}.run(monitor);
+		return runRequest(requestFactory.getCloudSpaces(), monitor);
 	}
 
 	public boolean reserveRouteIfAvailable(String host, String domainName, IProgressMonitor monitor) {

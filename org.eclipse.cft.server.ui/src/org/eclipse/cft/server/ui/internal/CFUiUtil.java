@@ -29,8 +29,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
@@ -43,9 +41,9 @@ import org.eclipse.cft.server.core.internal.CloudFoundryBrandingExtensionPoint.C
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudUtil;
-import org.eclipse.cft.server.core.internal.client.CFClient;
 import org.eclipse.cft.server.core.internal.client.CFClientManager;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryClientFactory;
+import org.eclipse.cft.server.core.internal.client.CloudServerCFClient;
 import org.eclipse.cft.server.core.internal.client.DeploymentInfoWorkingCopy;
 import org.eclipse.cft.server.core.internal.spaces.CloudOrgsAndSpaces;
 import org.eclipse.cft.server.ui.internal.wizards.HostnameValidationResult;
@@ -355,22 +353,20 @@ public class CFUiUtil {
 					if (displayURL) {
 						url = getUrlFromDisplayText(urlText);
 					}
-					CFClient client = null;
+					CloudServerCFClient client = null;
 					CFClientManager clientManager = CloudFoundryPlugin.getClientManagerRegistry().getClientManager(url);
 					if (sso) {
 						CloudCredentials credentials = CloudUtil.createSsoCredentials(passcode, tokenValue);
 						if (credentials == null) {
 							credentials = new CloudCredentials(passcode);
 						}
-						client = clientManager.createClient(url, credentials, selfSigned, monitor);
+						client = clientManager.createCloudServerClient(cfServer, credentials, cfServer.getCloudFoundrySpace(), monitor);
 					}
 					else {
-						client = clientManager.createClient(url, new CloudCredentials(userName, password), selfSigned,
-								monitor);
+						client = clientManager.createCloudServerClient(cfServer, new CloudCredentials(userName, password), cfServer.getCloudFoundrySpace(), monitor);
 					}
 
 					supportsSpaces[0] = client.getCloudSpaces(monitor);
-
 				}
 			};
 			if (context != null) {

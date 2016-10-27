@@ -63,38 +63,4 @@ public class CFClient {
 		OAuth2AccessToken token = v1Operations.login();
 		return new V1AccessToken(token);
 	}
-
-	/**
-	 * Attempts to retrieve cloud spaces using the given set of credentials and
-	 * server URL. This bypasses the session client in a Cloud Foundry server
-	 * instance, if one exists for the given server URL, and therefore attempts
-	 * to retrieve the cloud spaces with a disposable, temporary client that
-	 * logs in with the given credentials.Therefore, if fetching orgs and spaces
-	 * from an existing server instance, please use
-	 * {@link CloudFoundryServerBehaviour#getCloudSpaces(IProgressMonitor)}.
-	 * @param client
-	 * @param selfSigned true if connecting to a self-signing server. False
-	 * otherwise
-	 * @param monitor which performs client login checks, and basic error
-	 * handling. False if spaces should be obtained directly from the client
-	 * API.
-	 * 
-	 * @return resolved orgs and spaces for the given credential and server URL.
-	 */
-
-	public CloudOrgsAndSpaces getCloudSpaces(IProgressMonitor monitor) throws CoreException {
-
-		List<CloudSpace> foundSpaces = getV1Spaces();
-		if (foundSpaces != null && !foundSpaces.isEmpty()) {
-			List<CloudSpace> actualSpaces = new ArrayList<CloudSpace>(foundSpaces);
-			CloudOrgsAndSpaces orgsAndSpaces = new CloudOrgsAndSpaces(actualSpaces);
-			return orgsAndSpaces;
-		}
-
-		return null;
-	}
-
-	protected List<CloudSpace> getV1Spaces() {
-		return v1Operations.getSpaces();
-	}
 }

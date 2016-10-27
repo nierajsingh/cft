@@ -46,11 +46,15 @@ public abstract class ClientRequest<T> {
 
 	private CloudFoundryServer cloudServer;
 
-	public ClientRequest(CloudFoundryServer cloudServer, String label) {
+	private CloudServerCFClient client;
+
+	public ClientRequest(CloudFoundryServer cloudServer, CloudServerCFClient client, String label) {
 		Assert.isNotNull(label);
 		Assert.isNotNull(cloudServer);
+		Assert.isNotNull(client);
 		this.cloudServer = cloudServer;
 		this.requestLabel = generateRequestLabel(label, cloudServer);
+		this.client = client;
 	}
 
 	/**
@@ -303,7 +307,7 @@ public abstract class ClientRequest<T> {
 	}
 
 	protected CloudServerCFClient getClient(IProgressMonitor monitor) throws CoreException {
-		return getCloudServer().getBehaviour().getClient(monitor);
+		return client;
 	}
 
 	protected String generateRequestLabel(String originalLabel, CloudFoundryServer cloudServer) {

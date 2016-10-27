@@ -32,8 +32,8 @@ import org.eclipse.core.runtime.IProgressMonitor;
  */
 abstract public class ApplicationRequest<T> extends V1ClientRequest<T> {
 
-	public ApplicationRequest(CloudFoundryServer cloudServer, String label) {
-		super(cloudServer, label);
+	public ApplicationRequest(CloudFoundryServer cloudServer, CloudServerCFClient client, String label) {
+		super(cloudServer, client, label);
 	}
 
 	@Override

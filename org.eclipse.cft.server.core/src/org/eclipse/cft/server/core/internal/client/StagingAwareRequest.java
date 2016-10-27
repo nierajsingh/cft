@@ -50,8 +50,8 @@ import org.eclipse.core.runtime.IProgressMonitor;
  */
 abstract public class StagingAwareRequest<T> extends V1ClientRequest<T> {
 
-	public StagingAwareRequest(CloudFoundryServer cloudServer, String label) {
-		super(cloudServer, label);
+	public StagingAwareRequest(CloudFoundryServer cloudServer, CloudServerCFClient client, String label) {
+		super(cloudServer, client, label);
 	}
 
 	@Override

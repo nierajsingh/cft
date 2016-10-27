@@ -33,8 +33,8 @@ import org.eclipse.core.runtime.IProgressMonitor;
  */
 abstract class AppInStoppedStateAwareRequest<T> extends V1ClientRequest<T> {
 
-	public AppInStoppedStateAwareRequest(CloudFoundryServer cloudServer, String label) {
-		super(cloudServer, label);
+	public AppInStoppedStateAwareRequest(CloudFoundryServer cloudServer, CloudServerCFClient client, String label) {
+		super(cloudServer, client, label);
 	}
 
 	@Override
