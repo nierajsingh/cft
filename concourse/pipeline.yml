@@ -9,7 +9,7 @@ resources:
   type: git
   source:
     uri: https://github.com/nierajsingh/cft.git
-    branch: master
+    branch: concourse
     paths:
     - concourse/docker
 - name: docker-image
