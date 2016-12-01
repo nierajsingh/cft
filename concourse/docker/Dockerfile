@@ -6,6 +6,6 @@ RUN apt-get update && apt-get install -y \
   openjdk-8-jdk \
   maven \
   xvfb \
-  ubuntu-gnome-desktop
+  gnome-shell
 
 CMD /bin/bash  
