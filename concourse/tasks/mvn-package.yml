@@ -17,9 +17,10 @@ image_resource:
     repository: kdvolder/sts4-build-env
 
 inputs:
-- name: sts4
+- name: cft
 
 run:
   path: mvn
-  args: ["clean", "package"]
-  dir: sts4/vscode-extensions
+  args: ["clean", "package", "-Pe46"]
+  dir: cft
+

@@ -20,15 +20,21 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.cloudfoundry.client.lib.CloudCredentials;
+import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.eclipse.cft.server.core.internal.client.CFCloudCredentials;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.V1CloudCredentials;
+import org.eclipse.core.net.proxy.IProxyData;
+import org.eclipse.core.net.proxy.IProxyService;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
@@ -153,5 +159,81 @@ public class CloudServerUtil {
 			v1Credentials = new CloudCredentials(userName, password);
 		}
 		return new V1CloudCredentials(v1Credentials);
+	}
+	
+	/**
+	 * 
+	 * @param url
+	 * @return proxy configuration if one exists for the given URL. Null otherwise
+	 */
+	public static HttpProxyConfiguration getProxy(URL url) {
+		if (url == null) {
+			return null;
+		}
+		// In certain cases, the activator would have stopped and the plugin may
+		// no longer be available. Usually onl happens on shutdown.
+		CloudFoundryPlugin plugin = CloudFoundryPlugin.getDefault();
+		if (plugin != null) {
+			IProxyService proxyService = plugin.getProxyService();
+			if (proxyService != null) {
+				try {
+					IProxyData[] selectedProxies = proxyService.select(url.toURI());
+
+					// No proxy configured or not found
+					if (selectedProxies == null || selectedProxies.length == 0) {
+						return null;
+					}
+
+					IProxyData data = selectedProxies[0];
+					int proxyPort = data.getPort();
+					String proxyHost = data.getHost();
+					String user = data.getUserId();
+					String password = data.getPassword();
+					return proxyHost != null ? new HttpProxyConfiguration(proxyHost, proxyPort,
+							data.isRequiresAuthentication(), user, password) : null;
+				}
+				catch (URISyntaxException e) {
+					// invalid url (protocol, ...) => proxy will be null
+				}
+			}
+		}
+		return null;
+	}
+	
+	public static HttpProxyConfiguration getProxy(CloudFoundryServer cloudServer) {
+		if (cloudServer == null || cloudServer.getUrl() == null) {
+			return null;
+		}
+
+		// In certain cases, the activator would have stopped and the plugin may
+		// no longer be available. Usually onl happens on shutdown.
+		CloudFoundryPlugin plugin = CloudFoundryPlugin.getDefault();
+		if (plugin != null) {
+			IProxyService proxyService = plugin.getProxyService();
+			if (proxyService != null) {
+				try {
+					URI uri = new URI(cloudServer.getUrl());
+
+					IProxyData[] selectedProxies = proxyService.select(uri);
+
+					// No proxy configured or not found
+					if (selectedProxies == null || selectedProxies.length == 0) {
+						return null;
+					}
+
+					IProxyData data = selectedProxies[0];
+					int proxyPort = data.getPort();
+					String proxyHost = data.getHost();
+					String user = data.getUserId();
+					String password = data.getPassword();
+					return proxyHost != null ? new HttpProxyConfiguration(proxyHost, proxyPort,
+							data.isRequiresAuthentication(), user, password) : null;
+				}
+				catch (URISyntaxException e) {
+					// invalid url (protocol, ...) => proxy will be null
+				}
+			}
+		}
+		return null;
 	}
 }

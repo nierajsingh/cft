@@ -18,7 +18,7 @@ resources:
     username: {{docker_hub_username}}
     email: {{docker_hub_email}}
     password: {{docker_hub_password}}
-    repository: nierajsingh/cft-build-env
+    repository: nsinghpivotal/cft-build-env
 jobs:
 - name: build-docker-image
   serial: true

@@ -38,6 +38,7 @@ import org.cloudfoundry.client.lib.util.CloudUtil;
 import org.cloudfoundry.client.lib.util.JsonUtil;
 import org.cloudfoundry.client.lib.util.RestUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
+import org.eclipse.cft.server.core.internal.CloudServerUtil;
 import org.eclipse.core.net.proxy.IProxyData;
 import org.eclipse.core.net.proxy.IProxyService;
 import org.springframework.http.HttpMethod;
@@ -124,38 +125,14 @@ public class CloudFoundryClientFactory {
 		return new CloudCredentials(userName, password);
 	}
 
+	/**
+	 * 
+	 * @param url
+	 * @return proxy configuration if one exists for the given URL. Null otherwise
+	 * @deprecated use {@link CloudServerUtil#getProxy(URL)} instead.
+	 */
 	public static HttpProxyConfiguration getProxy(URL url) {
-		if (url == null) {
-			return null;
-		}
-		// In certain cases, the activator would have stopped and the plugin may
-		// no longer be available. Usually onl happens on shutdown.
-		CloudFoundryPlugin plugin = CloudFoundryPlugin.getDefault();
-		if (plugin != null) {
-			IProxyService proxyService = plugin.getProxyService();
-			if (proxyService != null) {
-				try {
-					IProxyData[] selectedProxies = proxyService.select(url.toURI());
-
-					// No proxy configured or not found
-					if (selectedProxies == null || selectedProxies.length == 0) {
-						return null;
-					}
-
-					IProxyData data = selectedProxies[0];
-					int proxyPort = data.getPort();
-					String proxyHost = data.getHost();
-					String user = data.getUserId();
-					String password = data.getPassword();
-					return proxyHost != null ? new HttpProxyConfiguration(proxyHost, proxyPort,
-							data.isRequiresAuthentication(), user, password) : null;
-				}
-				catch (URISyntaxException e) {
-					// invalid url (protocol, ...) => proxy will be null
-				}
-			}
-		}
-		return null;
+		return CloudServerUtil.getProxy(url);
 	}
 	
 	private static String getUrl(String url, String path) {

@@ -93,6 +93,9 @@ import org.eclipse.wst.server.core.model.ServerDelegate;
 @SuppressWarnings("restriction")
 public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 
+	private static final int SSL_HANDSHAKE_TIMEOUT = 60;
+
+
 	private static ThreadLocal<Boolean> deleteServicesOnModuleRemove = new ThreadLocal<Boolean>() {
 		protected Boolean initialValue() {
 			return Boolean.TRUE;
@@ -142,6 +145,8 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 	public static final String PROP_SSO_ID = "org.eclipse.cft.sso"; //$NON-NLS-1$
 	
 	public static final String PROP_PASSCODE_ID = "org.eclipse.cft.passcode"; //$NON-NLS-1$
+
+	public static final String HTTP_KEEP_ALIVE_SYSTEM_PROPERTY = "http.keepAlive"; //$NON-NLS-1$
 
 	protected void updateState(Server server, CloudFoundryApplicationModule appModule) throws CoreException {
 		IModule[] localModule = new IModule[] { appModule.getLocalModule() };
@@ -1522,10 +1527,16 @@ public class CloudFoundryServer extends ServerDelegate implements IURLProvider {
 		}
 	}
 	
+	/**
+	 * Experimental for CFT 1.0.2 (Neon.2). SSL handskake timeout is used only for certain CF Java clients. This API may change in the future.
+	 * @return
+	 */
+	public long getSslHandshakeTimeout() {
+		return SSL_HANDSHAKE_TIMEOUT;
+	}
+	
 	public HttpProxyConfiguration getProxyConfiguration() {
-		// Default returns nothing as proxy configuration is not yet supported.
-		// May be removed and replaced with v2 client equivalent
-		return null;
+		return CloudServerUtil.getProxy(this);
 	}
 	
 	public String getPasscode() {
