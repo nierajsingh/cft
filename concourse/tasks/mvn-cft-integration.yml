@@ -14,7 +14,7 @@ platform: linux
 image_resource:
   type: docker-image
   source:
-    repository: nierajsingh/cft-build-env
+    repository: nsinghpivotal/cft-build-env
 
 inputs:
 - name: cft
