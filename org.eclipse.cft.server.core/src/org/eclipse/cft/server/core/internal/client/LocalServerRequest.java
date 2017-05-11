@@ -46,9 +46,11 @@ import org.eclipse.wst.server.core.internal.Server;
 public abstract class LocalServerRequest<T> extends ClientRequest<T> {
 
 	private String accessTokenErrorLabel;
+	private CloudFoundryOperations v1Client;
 
-	public LocalServerRequest(String label) {
+	public LocalServerRequest(String label, CloudFoundryOperations v1Client) {
 		super(label);
+		this.v1Client = v1Client;
 	}
 
 	@Override
@@ -130,7 +132,7 @@ public abstract class LocalServerRequest<T> extends ClientRequest<T> {
 
 	@Override
 	protected CloudFoundryOperations getClient(IProgressMonitor monitor) throws CoreException {
-		return getCloudServer().getBehaviour().getClient(monitor);
+		return this.v1Client;
 	}
 
 	/**

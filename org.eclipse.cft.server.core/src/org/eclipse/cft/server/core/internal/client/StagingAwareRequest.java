@@ -51,8 +51,8 @@ import org.eclipse.core.runtime.SubMonitor;
  */
 abstract public class StagingAwareRequest<T> extends BehaviourRequest<T> {
 
-	public StagingAwareRequest(String label, CloudFoundryServerBehaviour behaviour) {
-		super(label, behaviour);
+	public StagingAwareRequest(String label, CloudFoundryServerBehaviour behaviour, CloudFoundryOperations v1Client) {
+		super(label, behaviour, v1Client);
 	}
 
 	protected long waitOnErrorInterval(Throwable exception, SubMonitor monitor) throws CoreException {

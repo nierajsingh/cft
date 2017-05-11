@@ -20,6 +20,7 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
+import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.SubMonitor;
@@ -31,8 +32,8 @@ import org.eclipse.core.runtime.SubMonitor;
  */
 abstract public class ApplicationRequest<T> extends BehaviourRequest<T> {
 
-	public ApplicationRequest(String label, CloudFoundryServerBehaviour behaviour) {
-		super(label, behaviour);
+	public ApplicationRequest(String label, CloudFoundryServerBehaviour behaviour, CloudFoundryOperations v1Client) {
+		super(label, behaviour, v1Client);
 	}
 
 	@Override
@@ -52,7 +53,7 @@ abstract public class ApplicationRequest<T> extends BehaviourRequest<T> {
 	protected CoreException getErrorOnLastFailedAttempt(Throwable error) {
 
 		if (CloudErrorUtil.is503Error(error)) {
-			return CloudErrorUtil.asCoreException(get503Error(error), error, true);
+			return CloudErrorUtil.toCoreException(get503Error(error), error, true);
 		}
 		return super.getErrorOnLastFailedAttempt(error);
 	}

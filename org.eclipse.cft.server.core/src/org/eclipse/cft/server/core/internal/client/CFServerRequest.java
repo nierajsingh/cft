@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. and others 
+ * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,8 @@
  *     Pivotal Software, Inc. - initial API and implementation
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
+
+import java.util.function.Function;
 
 import org.eclipse.cft.server.core.internal.CFLoginHandler;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
@@ -48,32 +50,41 @@ import org.eclipse.wst.server.core.internal.Server;
  * 
  * 
  */
-public abstract class CloudServerRequest<T> {
+public class CFServerRequest<T> {
 
 	protected final String requestLabel;
 
-	private CloudFoundryServer cloudServer;
+	private final CloudFoundryServer cloudServer;
 
-	private CFClient client;
+	private final CFClient client;
 
-	public CloudServerRequest(CloudFoundryServer cloudServer, CFClient client, String label) {
+	private final CFLoginHandler loginHandler;
+
+	private long timeLeft;
+
+	private final Function<CFClient, T> request;
+
+	public CFServerRequest(CloudFoundryServer cloudServer, CFClient client, CFLoginHandler loginHandler, Function<CFClient, T> request, String label) {
 		Assert.isNotNull(label);
 		Assert.isNotNull(cloudServer);
 		Assert.isNotNull(client);
+		Assert.isNotNull(request);
 		this.cloudServer = cloudServer;
 		this.requestLabel = generateRequestLabel(label, cloudServer);
 		this.client = client;
+		this.loginHandler = loginHandler;
+		this.request = request;
 	}
 
 	/**
 	 * Performs the client request, and if necessary, re-attempts the request
 	 * after a certain interval IFF an error occurs based on
-	 * {@link #getRetryTimeout()} and
+	 * {@link #getTimeout()} and
 	 * {@link #getRetryInterval(Throwable, SubMonitor)}.
 	 * <p/>
 	 * The default behaviour is to only attempt a client request once and quit
 	 * after an error is encountered. Subclasses may modify this behaviour by
-	 * overriding {@link #getRetryTimeout()} and
+	 * overriding {@link #getTimeout()} and
 	 * {@link #getRetryInterval(Throwable, SubMonitor)}
 	 * <p/>
 	 * Note that reattempts are only decided based on errors thrown by the
@@ -87,51 +98,54 @@ public abstract class CloudServerRequest<T> {
 	 * @throws OperationCanceledException if further attempts are cancelled even
 	 * if time still remains for additional attempts.
 	 */
-	protected T runRequestWithReattempts(CFClient client, IProgressMonitor monitor)
+	protected T runWithReattempts(CFClient client, IProgressMonitor monitor)
 			throws CoreException, OperationCanceledException {
 		Throwable error = null;
 
-		boolean reattempt = true;
-		long timeLeft = getRetryTimeout();
+		timeLeft = getTimeout();
 
 		// Either this operation returns a result during the waiting period or
 		// an error occurred, and error
 		// gets thrown
+	
 
-		while (reattempt) {
-
-			long interval = -1;
-
+		while (waitAndReattempt(error, monitor)) {
 			try {
-				return runRequest(client, monitor);
+				return request.apply(client);
 			}
 			catch (Throwable e) {
 				error = e;
 			}
-
-			interval = getRetryInterval(error, monitor);
-			timeLeft -= interval;
-			reattempt = !monitor.isCanceled() && timeLeft >= 0 && interval > 0;
-			if (reattempt) {
-
-				try {
-					Thread.sleep(interval);
-				}
-				catch (InterruptedException e) {
-					// Ignore, continue with the next iteration
-				}
-			}
 		}
 
+		throw CloudErrorUtil.toCoreException(error);
+	}
+
+	protected boolean waitAndReattempt(Throwable error, IProgressMonitor monitor)
+			throws OperationCanceledException, CoreException {
+		if (timeLeft <= 0) {
+			return false;
+		}
 		if (monitor.isCanceled()) {
-			// check for cancel here, if specialized requests do not do it
 			throw new OperationCanceledException(Messages.bind(Messages.OPERATION_CANCELED, requestLabel));
 		}
 		if (error instanceof OperationCanceledException) {
 			throw (OperationCanceledException) error;
 		}
+		loginHandler.checkConnection(error, requestLabel, monitor);
 
-		throw getErrorOnLastFailedAttempt(error);
+		long interval = getRetryInterval(error, monitor);
+		if (interval > 0) {
+			try {
+				Thread.sleep(interval);
+			}
+			catch (InterruptedException e) {
+				// Ignore, continue with the next iteration
+			}
+		}
+		timeLeft -= interval;
+
+		return true;
 	}
 
 	protected CloudFoundryServer getCloudServer() {
@@ -152,71 +166,8 @@ public abstract class CloudServerRequest<T> {
 		try {
 			return promptCredentialsAndRun(subProgress);
 		}
-		catch (CoreException ce) {
-			// See if it is a connection error. If so, parse it into readable
-			// form.
-			String connectionError = CloudErrorUtil.getConnectionError(ce);
-			if (connectionError != null) {
-				throw CloudErrorUtil.asCoreException(connectionError, ce, true);
-			}
-			else {
-				throw ce;
-			}
-		}
 		finally {
 			subProgress.done();
-		}
-
-	}
-
-	protected T checkClientConnectionAndRun(CFClient client, IProgressMonitor monitor) throws CoreException {
-
-		try {
-			return runRequestWithReattempts(client, monitor);
-		}
-		catch (CoreException ce) {
-
-			CloudFoundryServer server = getCloudServer();
-
-			if (server != null) {
-				CFLoginHandler handler = new CFLoginHandler(client, server);
-
-				CoreException accessError = null;
-				String accessErrorMessage = null;
-
-				if (handler.shouldAttemptClientLogin(ce)) {
-					CloudFoundryPlugin.logWarning(NLS.bind(Messages.ClientRequest_RETRY_REQUEST, requestLabel));
-					accessError = ce;
-
-					int attempts = 3;
-					String token = handler.login(monitor, attempts, CloudOperationsConstants.LOGIN_INTERVAL);
-					if (token == null) {
-						accessErrorMessage = Messages.ClientRequest_NO_TOKEN;
-					}
-
-					else {
-						try {
-							return runRequestWithReattempts(client, monitor);
-						}
-						catch (CoreException e) {
-							accessError = e;
-						}
-					}
-				}
-
-				if (accessError != null) {
-					Throwable cause = accessError.getCause() != null ? accessError.getCause() : accessError;
-					if (accessErrorMessage == null) {
-						accessErrorMessage = accessError.getMessage();
-					}
-					accessErrorMessage = NLS.bind(Messages.ClientRequest_SECOND_ATTEMPT_FAILED, requestLabel,
-							accessErrorMessage);
-
-					throw CloudErrorUtil.toCoreException(accessErrorMessage, cause);
-				}
-			}
-
-			throw ce;
 		}
 
 	}
@@ -252,7 +203,7 @@ public abstract class CloudServerRequest<T> {
 	 * {@link #getRetryInterval(Throwable, IProgressMonitor)}
 	 * @return
 	 */
-	protected long getRetryTimeout() {
+	protected long getTimeout() {
 		return CloudOperationsConstants.DEFAULT_CF_CLIENT_REQUEST_TIMEOUT;
 	}
 
@@ -272,31 +223,20 @@ public abstract class CloudServerRequest<T> {
 			}
 		}
 
-		Server server = (Server) cloudServer.getServer();
-
 		// Any Server request will require the server to be connected, so update
 		// the server state
-		if (server.getServerState() == IServer.STATE_STOPPED || server.getServerState() == IServer.STATE_STOPPING) {
-			server.setServerState(IServer.STATE_STARTING);
-		}
+		serverStarting();
 
 		try {
 
-			CFClient client = getClient(monitor);
-			if (client == null) {
-				throw CloudErrorUtil.toCoreException(NLS.bind(Messages.ERROR_NO_CLIENT, requestLabel));
-			}
-
 			httpTrace(client);
 
-			T result = checkClientConnectionAndRun(client, monitor);
+			T result = runWithReattempts(client, monitor);
 
 			// No errors at this stage, therefore assume operation was completed
 			// successfully, and update
 			// server state accordingly
-			if (server.getServerState() != IServer.STATE_STARTED) {
-				server.setServerState(IServer.STATE_STARTED);
-			}
+			serverStarted();
 			return result;
 
 		}
@@ -305,13 +245,35 @@ public abstract class CloudServerRequest<T> {
 			// the operation was
 			// attempted, but the operation failed
 			// set the server state back to stopped.
-			if (CloudErrorUtil.isConnectionError(ce) && server.getServerState() == IServer.STATE_STARTING) {
-				server.setServerState(IServer.STATE_STOPPED);
+			if (CloudErrorUtil.isConnectionError(ce)) {
+				serverStopped();
 			}
-			// server.setServerPublishState(IServer.PUBLISH_STATE_NONE);
 			throw ce;
 		}
 
+	}
+
+	protected void serverStopped() {
+		Server server = (Server) getCloudServer().getServer();
+		if (server.getServerState() == IServer.STATE_STARTING) {
+			server.setServerState(IServer.STATE_STOPPED);
+
+		} 
+		// server.setServerPublishState(IServer.PUBLISH_STATE_NONE);
+	}
+
+	protected void serverStarted() {
+		Server server = (Server) getCloudServer().getServer();
+		if (server.getServerState() != IServer.STATE_STARTED) {
+			server.setServerState(IServer.STATE_STARTED);
+		}
+	}
+
+	protected void serverStarting() {
+		Server server = (Server) getCloudServer().getServer();
+		if (server.getServerState() == IServer.STATE_STOPPED || server.getServerState() == IServer.STATE_STOPPING) {
+			server.setServerState(IServer.STATE_STARTING);
+		}
 	}
 
 	private void httpTrace(CFClient client) {
@@ -342,16 +304,5 @@ public abstract class CloudServerRequest<T> {
 
 		return requestLabel;
 	}
-
-	protected CoreException getErrorOnLastFailedAttempt(Throwable error) {
-		if (error instanceof CoreException) {
-			return (CoreException) error;
-		}
-		else {
-			return CloudErrorUtil.toCoreException(error);
-		}
-	}
-
-	protected abstract T runRequest(CFClient client, IProgressMonitor monitor) throws CoreException;
 
 }

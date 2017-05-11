@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others 
+ * Copyright (c) 2017 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,29 +20,15 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
-import org.cloudfoundry.client.lib.CloudFoundryOperations;
-import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.core.runtime.CoreException;
+public class CFCloudDomain {
 
-/**
- * 
- *
- * @deprecated Only used for v1 client support. Use {@link CFServerRequest}
- * for wrapper client support
- */
-abstract public class BehaviourRequest<T> extends LocalServerRequest<T> {
+	private final String name;
 
-	protected final CloudFoundryServerBehaviour behaviour;
-
-	public BehaviourRequest(String label, CloudFoundryServerBehaviour behaviour, CloudFoundryOperations v1Client) {
-		super(label, v1Client);
-		this.behaviour = behaviour;
+	public CFCloudDomain(String name) {
+		this.name = name;
 	}
 
-
-	@Override
-	protected CloudFoundryServer getCloudServer() throws CoreException {
-		return this.behaviour.getCloudFoundryServer();
+	public String getName() {
+		return name;
 	}
-
 }

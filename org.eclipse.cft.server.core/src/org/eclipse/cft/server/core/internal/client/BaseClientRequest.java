@@ -41,7 +41,7 @@ import org.eclipse.osgi.util.NLS;
  * 
  * @param <T> type of expected result from request. User {@link Void} if no
  * result is expected
- * @deprecated Only used for v1 client support. Use {@link CloudServerRequest} for wrapper client support
+ * @deprecated Only used for v1 client support. Use {@link CFServerRequest} for wrapper client support
  */
 public abstract class BaseClientRequest<T> {
 
@@ -88,7 +88,7 @@ public abstract class BaseClientRequest<T> {
 			// form.
 			String connectionError = CloudErrorUtil.getConnectionError(ce);
 			if (connectionError != null) {
-				throw CloudErrorUtil.asCoreException(connectionError, ce, true);
+				throw CloudErrorUtil.toCoreException(connectionError, ce, true);
 			}
 			else {
 				throw ce;

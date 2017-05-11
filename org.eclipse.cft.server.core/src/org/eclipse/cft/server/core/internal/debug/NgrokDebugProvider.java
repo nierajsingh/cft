@@ -115,7 +115,7 @@ public class NgrokDebugProvider extends CloudFoundryDebugProvider {
 					+ appModule.getDeployedApplicationName()
 					+ ". Please verify that the ngrok output file exists in the Cloud or that the application is running correctly.";//$NON-NLS-1$
 			if (error != null) {
-				throw CloudErrorUtil.asCoreException(message, error, false);
+				throw CloudErrorUtil.toCoreException(message, error, false);
 			}
 			else {
 				throw CloudErrorUtil.toCoreException(message);

@@ -110,8 +110,6 @@ public class PushApplicationOperation extends StartOperation {
 		}
 		return null;
 	}
-	
-	
 
 	@Override
 	protected void onOperationCanceled(OperationCanceledException e, IProgressMonitor monitor) throws CoreException {
@@ -172,7 +170,7 @@ public class PushApplicationOperation extends StartOperation {
 			int instances = appModule.getDeploymentInfo().getInstances();
 
 			Staging staging = new Staging(null /* no command */, buildpack);
-			
+
 			CoreException cloudAppCreationClientError = null;
 
 			// Guard against host taken errors and other errors that may
@@ -205,7 +203,8 @@ public class PushApplicationOperation extends StartOperation {
 
 				if (actualApp != null) {
 					SubMonitor updateMonitor = SubMonitor.convert(subMonitor, 100);
-					getBehaviour().getRequestFactory().getUpdateEnvVarRequest(appName, variables).run(updateMonitor.newChild(50));
+					getBehaviour().getBehaviourClient(monitor).updateEnvironmentVariables(appName, variables,
+							updateMonitor.newChild(50));
 
 					// Update instances if it is more than 1. By default, app
 					// starts

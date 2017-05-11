@@ -127,10 +127,10 @@ public class RestartOperation extends ApplicationOperation {
 			getBehaviour().operations().updateModule(getFirstModule()).run(monitor);
 
 			// Perform the actual restarting in the client
-			StartingInfo info = getBehaviour().getRequestFactory().restartApplication(deploymentName, startLabel)
-					.run(monitor.newChild(20));
+			CFStartingInfo info = getBehaviour().getBehaviourClient(monitor).restartApplication(deploymentName, startLabel, monitor.newChild(20));
 
-			appModule.setStartingInfo(info);
+			StartingInfo v1Info = info != null ? CFTypesFromV1.from(info) : null;
+			appModule.setStartingInfo(v1Info);
 
 			updatedState = trackApplicationRunningState(appModule, startLabel, monitor);
 		}

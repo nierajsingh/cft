@@ -129,7 +129,11 @@ public abstract class AbstractCloudFoundryTest extends TestCase {
 	 */
 	protected void connectClient(CloudCredentials credentials) throws CoreException {
 		serverBehavior.disconnect(new NullProgressMonitor());
-		serverBehavior.resetClient(credentials, new NullProgressMonitor());
+		CloudFoundryServer cloudServer = serverBehavior.getCloudFoundryServer();
+		cloudServer.setUsername(credentials.getEmail());
+		cloudServer.setPasscode(credentials.getPasscode());
+		cloudServer.setPassword(credentials.getPassword());
+		serverBehavior.resetClient(new NullProgressMonitor());
 		serverBehavior.connect(new NullProgressMonitor());
 	}
 

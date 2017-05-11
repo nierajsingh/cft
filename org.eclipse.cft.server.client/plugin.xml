@@ -4,7 +4,8 @@
    <extension
          point="org.eclipse.cft.server.core.client">
       <clientProvider
-            class="org.eclipse.cft.server.client.v2.internal.V2CFClientProvider">
+            class="org.eclipse.cft.server.client.v2.internal.V2CFClientProvider"
+            priority="Medium">
       </clientProvider>
    </extension>
 

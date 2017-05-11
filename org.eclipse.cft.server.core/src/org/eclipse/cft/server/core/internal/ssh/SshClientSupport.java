@@ -134,7 +134,7 @@ public class SshClientSupport extends CFClientV1Support implements ISshClientSup
 
 		}
 		catch (JSchException e) {
-			throw CloudErrorUtil.asCoreException("SSH connection error " + e.getMessage() //$NON-NLS-1$
+			throw CloudErrorUtil.toCoreException("SSH connection error " + e.getMessage() //$NON-NLS-1$
 					, e, false);
 		}
 	}

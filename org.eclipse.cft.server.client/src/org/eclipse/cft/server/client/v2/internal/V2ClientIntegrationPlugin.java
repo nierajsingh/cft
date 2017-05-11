@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. and others 
+ * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,12 +20,15 @@
  ********************************************************************************/
 package org.eclipse.cft.server.client.v2.internal;
 
+import org.eclipse.core.runtime.Plugin;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
-public class V2ClientInegrationActivator implements BundleActivator {
+public class V2ClientIntegrationPlugin extends Plugin {
 
 	private static BundleContext context;
+	private static V2ClientIntegrationPlugin plugin;
+	public static final String PLUGIN_ID = "org.eclipse.cft.server.client"; //$NON-NLS-1$
 
 	static BundleContext getContext() {
 		return context;
@@ -36,7 +39,8 @@ public class V2ClientInegrationActivator implements BundleActivator {
 	 * @see org.osgi.framework.BundleActivator#start(org.osgi.framework.BundleContext)
 	 */
 	public void start(BundleContext bundleContext) throws Exception {
-		V2ClientInegrationActivator.context = bundleContext;
+		V2ClientIntegrationPlugin.context = bundleContext;
+		plugin = this;
 	}
 
 	/*
@@ -44,7 +48,13 @@ public class V2ClientInegrationActivator implements BundleActivator {
 	 * @see org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
 	 */
 	public void stop(BundleContext bundleContext) throws Exception {
-		V2ClientInegrationActivator.context = null;
+		V2ClientIntegrationPlugin.context = null;
+	    plugin = null;
 	}
+	
+	public static V2ClientIntegrationPlugin getDefault() {
+		return plugin;
+	}
+
 
 }

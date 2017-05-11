@@ -30,7 +30,6 @@ import org.eclipse.cft.server.core.AbstractAppStateTracker;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryClientFactory;
 import org.eclipse.cft.server.core.internal.client.DeploymentConfiguration;
-import org.eclipse.cft.server.core.internal.client.diego.DiegoTarget;
 import org.eclipse.core.net.proxy.IProxyService;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -279,9 +278,7 @@ public class CloudFoundryPlugin extends Plugin {
 	public static final boolean DEFAULT_INCREMENTAL_PUBLISH_PREFERENCE_VAL = true;
 
 	private static CloudFoundryCallback callback;
-
-	private static CloudFoundryTargetManager targetManager;
-
+	
 	// Cached copy of app state tracker
 	private static List<AppStateTrackerEntry> appStateTrackerEntries;
 
@@ -338,18 +335,6 @@ public class CloudFoundryPlugin extends Plugin {
 			}
 		}
 		return callback;
-	}
-
-	public static synchronized CloudFoundryTargetManager getTargetManager() {
-		if (targetManager == null) {
-			targetManager = new CloudFoundryTargetManager();
-			// Hardcode this for now, as there is no extension point for
-			// contributing different targets yet.
-			// Targets are added in priority that they should be checked
-			targetManager.addTarget(new DiegoTarget());
-			targetManager.addTarget(CloudFoundryServerTarget.DEFAULT);
-		}
-		return targetManager;
 	}
 
 	public synchronized void setIncrementalPublish(boolean incrementalPublish) {

@@ -311,6 +311,9 @@ public class CloudErrorUtil {
 	}
 
 	public static CoreException toCoreException(Throwable e) {
+		if (e instanceof CoreException) {
+			return (CoreException) e;
+		}
 		if (e instanceof CloudFoundryException) {
 			if (((CloudFoundryException) e).getDescription() != null) {
 				return new CoreException(new Status(IStatus.ERROR, CloudFoundryPlugin.PLUGIN_ID, NLS.bind("{0} ({1})", //$NON-NLS-1$
@@ -431,7 +434,7 @@ public class CloudErrorUtil {
 	 * @return error as {@link CoreException}, with the additional error message
 	 * added if provided.
 	 */
-	public static CoreException asCoreException(String message, Throwable error, boolean replaceMessage) {
+	public static CoreException toCoreException(String message, Throwable error, boolean replaceMessage) {
 
 		if (message != null) {
 

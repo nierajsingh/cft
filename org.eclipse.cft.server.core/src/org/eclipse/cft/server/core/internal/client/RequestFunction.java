@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. and others 
+ * Copyright (c) 2017 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,11 +17,15 @@
  *  
  *  Contributors:
  *     Pivotal Software, Inc. - initial API and implementation
- ********************************************************************************/
-package org.eclipse.cft.server.core.internal.client;
+ ********************************************************************************/package org.eclipse.cft.server.core.internal.client;
 
-abstract class FileRequest<T> extends StagingAwareRequest<T> {
-	FileRequest(String label, CloudFoundryServerBehaviour behaviour) {
-		super(label, behaviour);
-	}
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+
+@FunctionalInterface
+public interface RequestFunction<R> {
+
+ 
+    R apply(IProgressMonitor monitor) throws CoreException;
+    
 }

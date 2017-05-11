@@ -6,7 +6,7 @@
          <meta.schema plugin="org.eclipse.cft.server.core" id="client" name="Cloud Foundry Client"/>
       </appInfo>
       <documentation>
-         Allows extenders to contribute a Cloud Foundry client used by the CFT framework. This is experimental and for INTERNAL USE ONLY and not supported until made public.
+         Allows extenders to contribute a Cloud Foundry client used by the CFT framework. This is experimental and for INTERNAL USE ONLY. May experience breaking changes.
       </documentation>
    </annotation>
 
@@ -58,6 +58,23 @@
                   <meta.attribute kind="java" basedOn=":org.eclipse.cft.server.core.internal.client.CFClientProvider"/>
                </appInfo>
             </annotation>
+         </attribute>
+         <attribute name="priority" use="required">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+            </annotation>
+            <simpleType>
+               <restriction base="string">
+                  <enumeration value="High">
+                  </enumeration>
+                  <enumeration value="Medium">
+                  </enumeration>
+                  <enumeration value="Low">
+                  </enumeration>
+               </restriction>
+            </simpleType>
          </attribute>
       </complexType>
    </element>

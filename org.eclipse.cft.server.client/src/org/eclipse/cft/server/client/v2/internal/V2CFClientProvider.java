@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. and others 
+ * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,6 @@ import org.cloudfoundry.client.CloudFoundryClient;
 import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.CloudServerUtil;
-import org.eclipse.cft.server.core.internal.ProviderPriority;
 import org.eclipse.cft.server.core.internal.client.CFClient;
 import org.eclipse.cft.server.core.internal.client.CFClientProvider;
 import org.eclipse.cft.server.core.internal.client.CFCloudCredentials;
@@ -38,26 +37,29 @@ import org.osgi.framework.Version;
 public class V2CFClientProvider implements CFClientProvider {
 
 	@Override
-	public ProviderPriority getPriority() {
-		return ProviderPriority.HIGH;
-	}
-
-	@Override
 	public boolean supports(String serverUrl, CFInfo info) {
 		return info != null && info.getDopplerUrl() != null && supportsVersion(info.getCCApiVersion());
 	}
 
 	@Override
-	public CFClient getClient(IServer cloudServer, CFCloudCredentials credentials, CloudFoundrySpace cloudFoundrySpace,
-			IProgressMonitor monitor) throws CoreException {
+	public CFClient createClient(IServer server, CFCloudCredentials credentials, IProgressMonitor monitor)
+			throws CoreException {
+
 		// Passcode not supported yet
 		if (credentials.isPasscodeSet()) {
 			throw CloudErrorUtil.toCoreException(
 					"One-time passcode not supported in this version of v2 client for doppler log streaming."); //$NON-NLS-1$
 		}
-		CloudFoundryServer cfServer = CloudServerUtil.getCloudServer(cloudServer);
+		CloudFoundryServer cfServer = CloudServerUtil.getCloudServer(server);
 		if (cfServer != null) {
-			return new V2Client(cfServer, credentials, cloudFoundrySpace);
+			CloudFoundrySpace space = cfServer.getCloudFoundrySpace();
+			String spaceName = null;
+			String orgName = null;
+			if (space != null) {
+				spaceName = space.getSpaceName();
+				orgName = space.getOrgName();
+			}
+			return new V2Client(cfServer, credentials, orgName, spaceName);
 		}
 		return null;
 	}

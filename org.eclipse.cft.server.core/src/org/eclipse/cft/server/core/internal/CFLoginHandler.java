@@ -22,9 +22,11 @@ package org.eclipse.cft.server.core.internal;
 
 import org.eclipse.cft.server.core.internal.client.AbstractWaitWithProgressJob;
 import org.eclipse.cft.server.core.internal.client.CFClient;
+import org.eclipse.cft.server.core.internal.client.CloudOperationsConstants;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.osgi.util.NLS;
 
 public class CFLoginHandler {
 
@@ -35,7 +37,7 @@ public class CFLoginHandler {
 	private static final int DEFAULT_PROGRESS_TICKS = 100;
 
 	private CloudFoundryServer server;
-	
+
 	/**
 	 * 
 	 * @param client must not be null
@@ -74,16 +76,16 @@ public class CFLoginHandler {
 				// CoreException.
 				// as they are uncaught exceptions and can be inspected directly
 				// by the shouldRetryOnError(..) method.
-				String tokenValue = client.login();
-				
+				String tokenValue = client.login(monitor);
+
 				// Save the token for both SSO and credentials.
-				if(server != null) {
+				if (server != null) {
 					// Store the SSO token in the server
-					server.setAndSaveToken(tokenValue);					
+					server.setAndSaveToken(tokenValue);
 				}
-				
+
 				return tokenValue;
-				
+
 			}
 
 			@Override
@@ -95,11 +97,36 @@ public class CFLoginHandler {
 	}
 
 	protected SubMonitor getProgressMonitor(IProgressMonitor progressMonitor) {
-		return progressMonitor instanceof SubMonitor ? (SubMonitor) progressMonitor : SubMonitor.convert(
-				progressMonitor, DEFAULT_PROGRESS_LABEL, DEFAULT_PROGRESS_TICKS);
+		return progressMonitor instanceof SubMonitor ? (SubMonitor) progressMonitor
+				: SubMonitor.convert(progressMonitor, DEFAULT_PROGRESS_LABEL, DEFAULT_PROGRESS_TICKS);
 	}
 
-	public boolean shouldAttemptClientLogin(Throwable t) {
-		return CloudErrorUtil.getInvalidCredentialsError(t) != null;
+	protected boolean shouldAttemptClientLogin(Throwable t) {
+		return t != null && CloudErrorUtil.getInvalidCredentialsError(t) != null;
+	}
+
+	public void checkConnection(Throwable error, String reattemptLabel, IProgressMonitor monitor) throws CoreException {
+
+		if (shouldAttemptClientLogin(error)) {
+			CloudFoundryPlugin.logWarning(NLS.bind(Messages.ClientRequest_RETRY_REQUEST, reattemptLabel));
+
+			int attempts = 3;
+			String token = null;
+			try {
+				token = login(monitor, attempts, CloudOperationsConstants.LOGIN_INTERVAL);
+			}
+			catch (CoreException ce) {
+				// See if it is a connection error. If so, parse it into
+				// readable
+				// form.
+				String connectionError = CloudErrorUtil.getConnectionError(ce);
+				if (connectionError != null) {
+					throw CloudErrorUtil.toCoreException(connectionError, ce, true);
+				}
+			}
+			if (token == null) {
+				throw CloudErrorUtil.toCoreException(Messages.ClientRequest_NO_TOKEN, error);
+			}
+		}
 	}
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015, 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2015, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,19 +20,23 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client.diego;
 
+import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.cft.server.core.internal.CloudFoundryServerTarget;
 import org.eclipse.cft.server.core.internal.CloudServerUtil;
+import org.eclipse.cft.server.core.internal.V1RequestProvider;
+import org.eclipse.cft.server.core.internal.client.AdditionalV1Operations;
 import org.eclipse.cft.server.core.internal.client.ClientRequestFactory;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.wst.server.core.IServer;
 
-public class DiegoTarget extends CloudFoundryServerTarget {
+@Deprecated
+public class DiegoRequestProvider extends V1RequestProvider {
 
 	@Override
-	public ClientRequestFactory createRequestFactory(IServer server) throws CoreException {
+	public ClientRequestFactory createRequestFactory(IServer server, CloudFoundryOperations v1Client, AdditionalV1Operations additionalV1Operations)
+			throws CoreException {
 		CloudFoundryServer cloudServer = CloudServerUtil.getCloudServer(server);
-		return new DiegoRequestFactory(cloudServer.getBehaviour());
+		return new DiegoRequestFactory(cloudServer.getBehaviour(), v1Client, additionalV1Operations);
 	}
 
 	@Override
@@ -40,7 +44,8 @@ public class DiegoTarget extends CloudFoundryServerTarget {
 		// To check if Server is "Diego", check if the server supports
 		// SSH. If so, assume it is a Diego target
 		// as SSH is only available in Diego or more recent Cloud Foundry
-		return createRequestFactory(server).supportsSsh();
+		CloudFoundryServer cloudServer = CloudServerUtil.getCloudServer(server);
+		return cloudServer.getBehaviour().supportsSsh();
 	}
 
 }

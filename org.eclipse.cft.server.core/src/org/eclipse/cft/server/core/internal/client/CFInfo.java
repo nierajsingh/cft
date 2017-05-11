@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Pivotal Software, Inc. and others
+ * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -22,10 +22,10 @@ package org.eclipse.cft.server.core.internal.client;
 
 import java.util.Map;
 
-import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.util.CloudUtil;
 import org.cloudfoundry.client.lib.util.JsonUtil;
+import org.eclipse.cft.server.core.internal.StringUtils;
 import org.eclipse.cft.server.core.internal.ssh.SshHost;
 import org.osgi.framework.Version;
 import org.springframework.web.client.RestTemplate;
@@ -38,7 +38,7 @@ public class CFInfo {
 
 	private Map<String, Object> infoMap;
 
-	public CFInfo(CloudCredentials creds, String url, HttpProxyConfiguration proxyConf, boolean selfSigned) {
+	public CFInfo(String url, HttpProxyConfiguration proxyConf, boolean selfSigned) {
 		restTemplate = RestUtils.createRestTemplate(proxyConf, selfSigned, false);
 		this.ccUrl = url;
 	}
@@ -115,6 +115,10 @@ public class CFInfo {
 
 	private String getUrl(String path) {
 		return ccUrl + path;
+	}
+
+	public boolean supportsSsh() {
+		return getSshHost() != null && !StringUtils.isEmpty(getSshClientId());
 	}
 
 }

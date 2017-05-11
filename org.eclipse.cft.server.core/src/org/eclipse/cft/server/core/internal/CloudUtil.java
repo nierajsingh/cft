@@ -40,6 +40,8 @@ import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.ApplicationDeploymentInfo;
 import org.eclipse.cft.server.core.CFServiceInstance;
 import org.eclipse.cft.server.core.EnvironmentVariable;
+import org.eclipse.cft.server.core.internal.client.CFCloudCredentials;
+import org.eclipse.cft.server.core.internal.client.CFCredentials;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
@@ -491,7 +493,11 @@ public class CloudUtil {
 		return null;
 	}
 	
-	/** Create new cloud credentials with passcode and token value, based on which is available. */
+	/** Create new cloud credentials with passcode and token value, based on which is available. 
+	 * <b/>
+	 * User {@link #createCFSsoCredentials(String, String)} instead
+	 * */
+	@Deprecated
 	public static CloudCredentials createSsoCredentials(String passcode, String tokenValue) {
 		CloudCredentials credentials = null;
 		if (tokenValue != null && !tokenValue.isEmpty()) {
@@ -505,6 +511,24 @@ public class CloudUtil {
 		}
 		if (credentials == null) {
 			credentials = new CloudCredentials(passcode);
+		}
+		return credentials;
+	}
+	
+	/** Create new cloud credentials with passcode and token value, based on which is available. */
+	public static CFCloudCredentials createCFSsoCredentials(String passcode, String tokenValue) {
+		CFCloudCredentials credentials = null;
+		if (tokenValue != null && !tokenValue.isEmpty()) {
+			try {
+				OAuth2AccessToken token = getTokenAsOAuth2Access(tokenValue);
+				credentials = new CFCredentials(passcode, token);	
+			}
+			catch (IOException e) {
+				// ignore
+			}
+		}
+		if (credentials == null) {
+			credentials = new CFCredentials(passcode);
 		}
 		return credentials;
 	}

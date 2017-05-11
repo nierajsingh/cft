@@ -78,8 +78,7 @@ class StopApplicationOperation extends AbstractPublishApplicationOperation {
 
 			subMonitor.worked(20);
 
-			getBehaviour().getRequestFactory().stopApplication(stoppingApplicationMessage, cloudModule)
-					.run(subMonitor.newChild(20));
+			getBehaviour().getBehaviourClient(monitor).stopApplication(stoppingApplicationMessage, cloudModule, subMonitor.newChild(20));
 
 			server.setModuleState(getModules(), IServer.STATE_STOPPED);
 			succeeded = true;

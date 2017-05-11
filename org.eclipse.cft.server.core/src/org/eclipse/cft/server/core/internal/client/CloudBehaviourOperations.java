@@ -31,6 +31,7 @@ import org.eclipse.cft.server.core.internal.Messages;
 import org.eclipse.cft.server.core.internal.ServerEventHandler;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.wst.server.core.IModule;
 
 /**
@@ -59,7 +60,8 @@ public class CloudBehaviourOperations {
 	 * @throws CoreException if operation was not created
 	 */
 	public ICloudFoundryOperation createServices(final CFServiceInstance[] services) throws CoreException {
-		return new UpdateServicesOperation(behaviour.getRequestFactory().getCreateServicesRequest(services), behaviour);
+		return new UpdateServicesOperation(
+				(monitor) -> behaviour.getBehaviourClient(monitor).createServices(services, monitor), behaviour);
 	}
 
 	/**
@@ -68,7 +70,8 @@ public class CloudBehaviourOperations {
 	 * @throws CoreException if operation was not created.
 	 */
 	public ICloudFoundryOperation deleteServices(final List<String> services) throws CoreException {
-		return new UpdateServicesOperation(behaviour.getRequestFactory().getDeleteServicesRequest(services), behaviour);
+		return new UpdateServicesOperation(
+				(monitor) -> behaviour.getBehaviourClient(monitor).deleteServices(services, monitor), behaviour);
 	}
 
 	/**
@@ -126,27 +129,46 @@ public class CloudBehaviourOperations {
 	 */
 	public ICloudFoundryOperation memoryUpdate(final CloudFoundryApplicationModule appModule, final int memory)
 			throws CoreException {
+		String opName = NLS.bind(Messages.CloudFoundryServerBehaviour_UPDATE_APP_MEMORY,
+				appModule.getDeployedApplicationName());
 		return new ApplicationUpdateOperation(
-				behaviour.getRequestFactory().getUpdateApplicationMemoryRequest(appModule, memory), behaviour,
-				appModule);
+				(monitor) -> behaviour.getBehaviourClient(monitor).updateApplicationMemory(appModule, memory, monitor),
+				behaviour, appModule, opName);
 	}
 
 	
 	public ICloudFoundryOperation updateApplicationDiego(final CloudFoundryApplicationModule appModule, boolean diego)
 			throws CoreException {
-		
+		String message;
+		if (diego) {
+			message = NLS.bind(Messages.CloudFoundryServerBehaviour_ENABLING_DIEGO,
+					appModule.getDeployedApplicationName());
+		}
+		else {
+			message = NLS.bind(Messages.CloudFoundryServerBehaviour_DISABLING_DIEGO,
+					appModule.getDeployedApplicationName());
+		}
+
 		return new ApplicationUpdateOperation(
-				behaviour.getRequestFactory().updateApplicationDiego(appModule, diego), behaviour,
-				appModule);
+				(monitor) -> behaviour.getBehaviourClient(monitor).updateApplicationDiego(appModule, diego, monitor),
+				behaviour, appModule, message);
 	}
 
 
 	public ICloudFoundryOperation updateApplicationEnableSsh(final CloudFoundryApplicationModule appModule, boolean enableSsh)
 			throws CoreException {
-		
+		String message;
+		if (enableSsh) {
+			message = NLS.bind(Messages.CloudFoundryServerBehaviour_ENABLING_SSH,
+					appModule.getDeployedApplicationName());
+		}
+		else {
+			message = NLS.bind(Messages.CloudFoundryServerBehaviour_DISABLING_SSH,
+					appModule.getDeployedApplicationName());
+		}
 		return new ApplicationUpdateOperation(
-				behaviour.getRequestFactory().updateApplicationEnableSsh(appModule, enableSsh), behaviour,
-				appModule);
+				(monitor) -> behaviour.getBehaviourClient(monitor).updateApplicationEnableSsh(appModule, enableSsh, monitor), behaviour,
+				appModule, message);
 	}
 
 	
@@ -158,10 +180,11 @@ public class CloudBehaviourOperations {
 
 		final CloudFoundryApplicationModule appModule = behaviour.getCloudFoundryServer()
 				.getExistingCloudModule(appName);
-
+       
 		if (appModule != null) {
-			return new ApplicationUpdateOperation(behaviour.getRequestFactory().getUpdateAppUrlsRequest(appName, urls),
-					behaviour, appModule.getLocalModule());
+			String opName = NLS.bind(Messages.CloudFoundryServerBehaviour_UPDATE_APP_URLS, appName);
+			return new ApplicationUpdateOperation((monitor) -> behaviour.getBehaviourClient(monitor).updateAppRoutes(appName, urls, monitor),
+					behaviour, appModule.getLocalModule(), opName);
 		}
 		else {
 			throw CloudErrorUtil.toCoreException(
@@ -175,8 +198,12 @@ public class CloudBehaviourOperations {
 	 */
 	public ICloudFoundryOperation bindServices(final CloudFoundryApplicationModule appModule,
 			final List<String> services) throws CoreException {
-		return new ApplicationUpdateOperation(behaviour.getRequestFactory().getUpdateServicesRequest(
-				appModule.getDeployedApplicationName(), services), behaviour, appModule.getLocalModule());
+		String opName = NLS.bind(Messages.CloudFoundryServerBehaviour_UPDATE_SERVICE_BINDING,
+				appModule.getDeployedApplicationName());
+		return new ApplicationUpdateOperation(
+				(monitor) -> behaviour.getBehaviourClient(monitor)
+						.updateServiceBindings(appModule.getDeployedApplicationName(), services, monitor),
+				behaviour, appModule.getLocalModule(), opName);
 	}
 
 	/**
@@ -189,8 +216,11 @@ public class CloudBehaviourOperations {
 	 */
 	public ICloudFoundryOperation environmentVariablesUpdate(IModule module, String appName,
 			List<EnvironmentVariable> variables) throws CoreException {
-		BaseClientRequest<Void> request = behaviour.getRequestFactory().getUpdateEnvVarRequest(appName, variables);
-		return new ApplicationUpdateOperation(request, behaviour, module);
+		String opName = NLS.bind(Messages.CloudFoundryServerBehaviour_UPDATE_ENV_VARS, appName);
+
+		return new ApplicationUpdateOperation(
+				(monitor) -> behaviour.getBehaviourClient(monitor).updateEnvironmentVariables(appName, variables, monitor),
+				behaviour, module, opName);
 	}
 
 	/**

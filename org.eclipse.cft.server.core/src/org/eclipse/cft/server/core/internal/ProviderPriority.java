@@ -22,8 +22,16 @@ package org.eclipse.cft.server.core.internal;
 
 public enum ProviderPriority {
 	
-	HIGH,
-	MEDIUM,
-	LOW
-
+	High,
+	Medium,
+	Low;
+	
+	public static ProviderPriority getPriority(String value) {
+		for (ProviderPriority pr : ProviderPriority.values()) {
+			if (pr.name().equals(value)) {
+				return pr;
+			}
+		}
+		return null;
+	}
 }

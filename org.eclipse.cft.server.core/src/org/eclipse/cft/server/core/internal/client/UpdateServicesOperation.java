@@ -33,9 +33,9 @@ import org.springframework.web.client.HttpServerErrorException;
 
 public class UpdateServicesOperation extends CFOperation {
 
-	private final BaseClientRequest<List<CFServiceInstance>> request;
+	private final RequestFunction<List<CFServiceInstance>> request;
 
-	public UpdateServicesOperation(BaseClientRequest<List<CFServiceInstance>> request,
+	public UpdateServicesOperation(RequestFunction<List<CFServiceInstance>> request,
 			CloudFoundryServerBehaviour behaviour) {
 		super(behaviour);
 		this.request = request;
@@ -49,7 +49,7 @@ public class UpdateServicesOperation extends CFOperation {
 	@Override
 	public void run(IProgressMonitor monitor) throws CoreException {
 		try {
-			List<CFServiceInstance> existingServices = request.run(monitor);
+			List<CFServiceInstance> existingServices = request.apply(monitor);
 			ServerEventHandler.getDefault().fireServicesUpdated(getBehaviour().getCloudFoundryServer(),
 					existingServices);
 		}

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others 
+ * Copyright (c) 2017 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,29 +20,27 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
-import org.cloudfoundry.client.lib.CloudFoundryOperations;
-import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.core.runtime.CoreException;
+import java.util.List;
+import java.util.stream.Collectors;
 
-/**
- * 
- *
- * @deprecated Only used for v1 client support. Use {@link CFServerRequest}
- * for wrapper client support
- */
-abstract public class BehaviourRequest<T> extends LocalServerRequest<T> {
+import org.cloudfoundry.client.lib.StartingInfo;
+import org.cloudfoundry.client.lib.domain.CloudDomain;
 
-	protected final CloudFoundryServerBehaviour behaviour;
+public class CFTypesFromV1 {
 
-	public BehaviourRequest(String label, CloudFoundryServerBehaviour behaviour, CloudFoundryOperations v1Client) {
-		super(label, v1Client);
-		this.behaviour = behaviour;
+	public static CFStartingInfo from(StartingInfo info) {
+		return new CFStartingInfo(info.getStagingFile());
 	}
 
-
-	@Override
-	protected CloudFoundryServer getCloudServer() throws CoreException {
-		return this.behaviour.getCloudFoundryServer();
+	public static StartingInfo from(CFStartingInfo info) {
+		return new StartingInfo(info.getStagingFile());
 	}
 
+	public static List<CFCloudDomain> from(List<CloudDomain> domain) {
+		return domain.stream().map(dm -> from(dm)).collect(Collectors.toList());
+	}
+
+	public static CFCloudDomain from(CloudDomain domain) {
+		return new CFCloudDomain(domain.getName());
+	}
 }

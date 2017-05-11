@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2017 Pivotal Software, Inc. and others 
+ * Copyright (c) 2017 Pivotal Software, Inc. and others 
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,29 +20,28 @@
  ********************************************************************************/
 package org.eclipse.cft.server.core.internal.client;
 
-import org.cloudfoundry.client.lib.CloudFoundryOperations;
+import java.util.function.Function;
+
+import org.eclipse.cft.server.core.internal.CFLoginHandler;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
-import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
 
-/**
- * 
- *
- * @deprecated Only used for v1 client support. Use {@link CFServerRequest}
- * for wrapper client support
- */
-abstract public class BehaviourRequest<T> extends LocalServerRequest<T> {
+public class CFClientRequestProvider {
 
-	protected final CloudFoundryServerBehaviour behaviour;
+	private final CFClient client;
 
-	public BehaviourRequest(String label, CloudFoundryServerBehaviour behaviour, CloudFoundryOperations v1Client) {
-		super(label, v1Client);
-		this.behaviour = behaviour;
+	private final CloudFoundryServer cloudServer;
+
+	private final CFLoginHandler loginHandler;
+
+	public CFClientRequestProvider(CloudFoundryServer cloudServer, CFClient client, CFLoginHandler loginHandler) {
+		this.client = client;
+		this.cloudServer = cloudServer;
+		this.loginHandler = loginHandler;
 	}
 
-
-	@Override
-	protected CloudFoundryServer getCloudServer() throws CoreException {
-		return this.behaviour.getCloudFoundryServer();
+	public <T> T runAsRequest(Function<CFClient, T> request, String label, IProgressMonitor monitor) throws Exception {
+		return new CFServerRequest<T>(cloudServer, client, loginHandler, request, label).run(monitor);
 	}
 
 }

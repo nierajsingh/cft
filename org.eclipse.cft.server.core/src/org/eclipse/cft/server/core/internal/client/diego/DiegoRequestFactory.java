@@ -27,7 +27,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 
-import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryOperations;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.eclipse.cft.server.core.ISshClientSupport;
@@ -35,9 +34,9 @@ import org.eclipse.cft.server.core.internal.CloudErrorUtil;
 import org.eclipse.cft.server.core.internal.CloudFoundryPlugin;
 import org.eclipse.cft.server.core.internal.CloudFoundryServer;
 import org.eclipse.cft.server.core.internal.Messages;
+import org.eclipse.cft.server.core.internal.client.AdditionalV1Operations;
 import org.eclipse.cft.server.core.internal.client.BaseClientRequest;
 import org.eclipse.cft.server.core.internal.client.BehaviourRequest;
-import org.eclipse.cft.server.core.internal.client.CFInfo;
 import org.eclipse.cft.server.core.internal.client.ClientRequestFactory;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryApplicationModule;
 import org.eclipse.cft.server.core.internal.client.CloudFoundryServerBehaviour;
@@ -50,17 +49,18 @@ import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 
+@Deprecated
 public class DiegoRequestFactory extends ClientRequestFactory {
 
-	public DiegoRequestFactory(CloudFoundryServerBehaviour behaviour) {
-		super(behaviour);
+	public DiegoRequestFactory(CloudFoundryServerBehaviour behaviour, CloudFoundryOperations v1Client, AdditionalV1Operations additionalV1Operations) {
+		super(behaviour, v1Client, additionalV1Operations);
 	}
 
 	@Override
 	public BaseClientRequest<CloudApplication> getCloudApplication(final String appName) throws CoreException {
 
 		return new BehaviourRequest<CloudApplication>(
-				NLS.bind(Messages.CloudFoundryServerBehaviour_GET_APPLICATION, appName), behaviour) {
+				NLS.bind(Messages.CloudFoundryServerBehaviour_GET_APPLICATION, appName), behaviour, v1Client) {
 			@Override
 			protected CloudApplication doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
 				try {
@@ -71,7 +71,7 @@ public class DiegoRequestFactory extends ClientRequestFactory {
 					// instances throws 503 due to
 					// CF backend error
 					if (CloudErrorUtil.is503Error(e)) {
-						return behaviour.getAdditionalV1ClientOperations(progress).getBasicApplication(appName);
+						return additionalV1Operations.getBasicApplication(appName);
 					}
 					else {
 						throw e;
@@ -88,7 +88,7 @@ public class DiegoRequestFactory extends ClientRequestFactory {
 
 		final String label = NLS.bind(Messages.CloudFoundryServerBehaviour_GET_ALL_APPS, serverId);
 
-		return new BehaviourRequest<List<CloudApplication>>(label, behaviour) {
+		return new BehaviourRequest<List<CloudApplication>>(label, behaviour, v1Client) {
 			@Override
 			protected List<CloudApplication> doRun(CloudFoundryOperations client, SubMonitor progress)
 					throws CoreException {
@@ -101,7 +101,7 @@ public class DiegoRequestFactory extends ClientRequestFactory {
 					// instances throws 503 due to
 					// CF backend error
 					if (CloudErrorUtil.is503Error(e)) {
-						return behaviour.getAdditionalV1ClientOperations(progress).getBasicApplications();
+						return additionalV1Operations.getBasicApplications();
 					}
 					else {
 						throw e;
@@ -113,7 +113,7 @@ public class DiegoRequestFactory extends ClientRequestFactory {
 
 	@Override
 	public BaseClientRequest<?> stopApplication(final String message, final CloudFoundryApplicationModule cloudModule) {
-		return new BehaviourRequest<Void>(message, behaviour) {
+		return new BehaviourRequest<Void>(message, behaviour, v1Client) {
 			@Override
 			protected Void doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
 				try {
@@ -124,7 +124,7 @@ public class DiegoRequestFactory extends ClientRequestFactory {
 					// instances throws 503 due to
 					// CF backend error
 					if (CloudErrorUtil.is503Error(e)) {
-						behaviour.getAdditionalV1ClientOperations(progress)
+						additionalV1Operations
 								.stopApplication(cloudModule.getDeployedApplicationName());
 					}
 					else {
@@ -144,12 +144,12 @@ public class DiegoRequestFactory extends ClientRequestFactory {
 		final CloudFoundryServer cloudServer = behaviour.getCloudFoundryServer();
 
 		// If ssh is not supported, try the default legacy file fetching
-		if (!supportsSsh()) {
+		if (!behaviour.supportsSsh()) {
 			return super.getFile(app, instanceIndex, path, isDir);
 		}
 
 		String label = NLS.bind(Messages.CloudFoundryServerBehaviour_FETCHING_FILE, path, app.getName());
-		return new BehaviourRequest<String>(label, behaviour) {
+		return new BehaviourRequest<String>(label, behaviour, v1Client) {
 			@Override
 			protected String doRun(CloudFoundryOperations client, SubMonitor progress) throws CoreException {
 
@@ -183,30 +183,6 @@ public class DiegoRequestFactory extends ClientRequestFactory {
 				}
 			}
 		};
-	}
-
-	@Override
-	public CFInfo getCloudInfo() throws CoreException {
-		if (cachedInfo == null) {
-			CloudFoundryServer cloudServer = behaviour.getCloudFoundryServer();
-			cachedInfo = new CFInfo(new CloudCredentials(cloudServer.getUsername(), cloudServer.getPassword()),
-					cloudServer.getUrl(), cloudServer.getProxyConfiguration(), cloudServer.isSelfSigned());
-		}
-		return cachedInfo;
-	}
-
-	@Override
-	public boolean supportsSsh() {
-		try {
-			CFInfo info = getCloudInfo();
-			return info != null && info.getSshClientId() != null && info.getSshHost() != null
-					&& info.getSshHost().getHost() != null && info.getSshHost().getFingerPrint() != null;
-		}
-		catch (CoreException e) {
-			CloudFoundryPlugin.logError(e);
-		}
-		return false;
-
 	}
 
 	protected String getContent(Channel channel) throws CoreException {
@@ -256,5 +232,4 @@ public class DiegoRequestFactory extends ClientRequestFactory {
 		}
 		return null;
 	}
-
 }

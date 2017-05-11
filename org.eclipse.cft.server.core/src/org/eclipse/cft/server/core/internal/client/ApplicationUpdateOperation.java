@@ -33,21 +33,25 @@ import org.eclipse.wst.server.core.IModule;
  */
 public class ApplicationUpdateOperation extends ModulesOperation {
 
-	private final BaseClientRequest<?> request;
+	private final RequestConsumer request;
+	private final String opName;
 
-	public ApplicationUpdateOperation(BaseClientRequest<?> request, CloudFoundryServerBehaviour behaviour, IModule module) {
+
+	public ApplicationUpdateOperation(RequestConsumer request, CloudFoundryServerBehaviour behaviour,
+			IModule module, String opName) {
 		super(behaviour, module);
 		this.request = request;
+		this.opName = opName;
 	}
 
 	@Override
 	public void runOnVerifiedModule(IProgressMonitor monitor) throws CoreException {
-		request.run(monitor);
+		request.accept(monitor);
 		getBehaviour().asyncUpdateDeployedModule(getFirstModule());
 	}
 
 	@Override
 	public String getOperationName() {
-		return this.request.getRequestLabel();
+		return this.opName;
 	}
 }
